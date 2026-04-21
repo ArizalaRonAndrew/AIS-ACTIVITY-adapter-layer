@@ -1,14 +1,13 @@
 import * as AuthService from "../services/authService.js";
 
 export const registerStudent = async (req, res) => {
-    // We use req.body directly to ensure all fields (firstName, lastName, address, etc.) 
-    // sent by your Auth System are captured without having to manually list them all.
+   
     const studentProfile = req.body; 
     
     try {
         console.log("Adapter received request on port 4000. Sending to service layer...");
         
-        // Pass the profile to the service layer to handle the external API call
+    
         const result = await AuthService.registerStudent(studentProfile);
         
         res.status(201).json({

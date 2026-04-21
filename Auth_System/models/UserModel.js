@@ -5,15 +5,12 @@ import jwt from "jsonwebtoken";
 
 export const createUser = async (userProfile, email, password) => {
   // --- VALIDATION BLOCK --- //
-
-  // 1. Check for basic auth requirements
   if (!email || !password || email.trim() === "" || password.trim() === "") {
     const error = new Error("Email and password are required.");
     error.statusCode = 400;
     throw error;
   }
 
-  // 2. Dynamically check for missing profile fields
   const requiredFields = ['firstName', 'lastName', 'dob', 'address', 'course', 'major'];
   const missingFields = requiredFields.filter(field => !userProfile[field] || String(userProfile[field]).trim() === "");
 
@@ -23,7 +20,6 @@ export const createUser = async (userProfile, email, password) => {
     throw error;
   }
 
-  // 3. Validate specific formats
   if (!validator.isEmail(email)) {
     const error = new Error("Invalid email format.");
     error.statusCode = 400;
@@ -37,8 +33,6 @@ export const createUser = async (userProfile, email, password) => {
   }
 
   // --- DATABASE & API BLOCK --- //
-
-  // Check if email already exists
   const [user] = await pool.query("SELECT email FROM users WHERE email = ?", [email]);
 
   if (user.length === 1) {
@@ -47,12 +41,10 @@ export const createUser = async (userProfile, email, password) => {
     throw error;
   }
 
-  // Hash password
   const salt = bcrypt.genSaltSync(10);
   const hashedPassword = bcrypt.hashSync(password, salt);
 
   // External API Call to your ADAPTER LAYER
-  // NOTE: Ensure '/auth/register' matches the exact route in your adapter_layer app!
   const response = await fetch(`http://localhost:4000/auth/register`, {
     method: "POST",
     headers: {
@@ -61,7 +53,7 @@ export const createUser = async (userProfile, email, password) => {
     body: JSON.stringify(userProfile)
   });
 
-  // THIS IS THE FIX: Stop the process if the Adapter fails!
+  
   if (!response.ok) {
     const errorText = await response.text();
     const error = new Error(`Adapter Layer Failed: ${response.status} - ${errorText}`);
@@ -69,13 +61,20 @@ export const createUser = async (userProfile, email, password) => {
     throw error; 
   }
 
-  // Insert new user into the database ONLY if the adapter succeeded
+
+  const adapterData = await response.json(); 
+
+  
   const [newUser] = await pool.query(
     "INSERT INTO users (email, password) VALUES (?, ?)",
     [email, hashedPassword]
   );
 
-  return newUser;
+
+  return { 
+    dbUser: newUser, 
+    adapterResponse: adapterData 
+  };
 };
 
 export const signIn = async (email, password) => {

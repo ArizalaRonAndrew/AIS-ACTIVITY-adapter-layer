@@ -1,30 +1,40 @@
 export const registerStudent = async (studentProfile) => {
-    // 1. Validate the incoming data from your Auth System
-    const requiredFields = ['firstName', 'lastName', 'dob', 'course', 'major', 'status'];
+    // 1. VALIDATION: Check for the fields your AUTH SYSTEM is sending
+    const requiredFields = ['firstName', 'lastName', 'dob', 'address', 'course', 'major', 'status'];
     const missingFields = requiredFields.filter(field => !studentProfile[field]);
 
     if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
     }
 
-    console.log("Adapter Service validation passed. Forwarding to Render API...");
+    // 2. MAPPING BLOCK: Translate Modern names to Legacy names
+    // This is where we fix the issue of empty records in Render.
+    const legacyProfile = {
+        name: `${studentProfile.firstName} ${studentProfile.lastName}`, // Merge names into 'name'
+        birthdate: studentProfile.dob,       // 'dob' becomes 'birthdate'
+        address: studentProfile.address,     // 'address' stays 'address'
+        program: `${studentProfile.course} ${studentProfile.major}`,      // 'course' becomes 'program'
+        studentStatus: studentProfile.status // 'status' becomes 'studentStatus'
+    };
 
-    // 2. Forward the valid profile to the live Render legacy API
+    console.log("Adapter Service: Validation passed. Forwarding Mapped Profile to Render...");
+
+    // 3. FORWARDING: Send the LEGACY profile to the Render API
     const response = await fetch(`https://ais-simulated-legacy.onrender.com/api/students`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(studentProfile)
+        body: JSON.stringify(legacyProfile) // Sending the translated data
     });
 
-    // 3. Catch any errors thrown by the Render API (e.g., 400 Bad Request, 500 Server Error)
+    // 4. ERROR HANDLING: Catch rejections from Render
     if (!response.ok) {
-        const errorText = await response.text(); // Read the error message from Render if there is one
+        const errorText = await response.text(); 
         throw new Error(`Legacy API rejected the request: ${response.status} - ${errorText}`);
     }
 
-    // 4. Return the successful response back to your controller
+    // 5. SUCCESS: Return the full record (including the new _id) back to the Auth System
     const data = await response.json();
     return data;
 }
