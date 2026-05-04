@@ -1,13 +1,16 @@
-import axios from "axios";
+import axios from 'axios';
 
-const ADAPTER_URL = "http://localhost:4000/auth"; // Adapter Layer
+const ADAPTER_URL = process.env.ADAPTER_URL || 'http://localhost:5100/api';
 
-export const getStudents = async () => {
-    const response = await axios.get(`${ADAPTER_URL}/students`);
-    return response.data;
-};
-
-export const getStudentById = async (id) => {
-    const response = await axios.get(`${ADAPTER_URL}/students/${id}`);
-    return response.data;
+export const getAllStudents = async (token) => { // Export directly
+    try {
+        const response = await axios.get(`${ADAPTER_URL}/auth/students`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        const errorMessage = error.response?.data?.message || 'Failed to communicate with Adapter Layer';
+        console.error(`[StudentService Error]: ${errorMessage}`);
+        throw new Error(errorMessage);
+    }
 };

@@ -1,10 +1,9 @@
-import express from "express";
-import * as studentPortal from "../controllers/studentController.js";
+import express from 'express';
+import { getStudentsList } from '../controllers/studentController.js'; // Notice the .js extension
+import authHandler from '../middleware/authHandler.js'; // Notice the .js extension
 
 const router = express.Router();
 
-router.get("/students", studentPortal.fetchStudents);
+router.get('/', authHandler, getStudentsList);
 
-router.get("/students/:id", studentPortal.fetchStudentById);
-
-export default router;
+export default router; // Changed from module.exports

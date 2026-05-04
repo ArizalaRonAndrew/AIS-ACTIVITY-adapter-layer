@@ -1,32 +1,16 @@
-import jwt from "jsonwebtoken"
-import * as UserModel from "../models/UserModels.js"
+const authHandler = (req, res, next) => {
+    const authHeader = req.headers.authorization;
 
-    const authHandler = async(req, res, next) => {
-        const {authorization} = req.headers;
-        if(!authorization){
-            res.status(401).json({
-                success: false,
-                message: [{result: "You do not have permission to access the app."}
-                ]
-            })
-        }
-
-        const token = authorization.split(' ')[1];
-
-        try{
-            const {id} = jwt.verify(token, process.env.SECRET);
-            const [user] = await UserModel.getUser(id);
-            //req.user = user.id;
-            
-            next();
-        }catch(err){
-            res.status(401).json({
-                success: false,
-                message: [
-                    {result: "Request is unauthorized"}
-                ]
-            })
-        }
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Unauthorized: Missing or invalid token' 
+        });
     }
 
-    export default authHandler;
+    const token = authHeader.split(' ')[1];
+    req.token = token; 
+    next();
+};
+
+export default authHandler; // Changed from module.exports
